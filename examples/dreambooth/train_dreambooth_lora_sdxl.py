@@ -97,7 +97,22 @@ def determine_scheduler_type(pretrained_model_name_or_path, revision):
         scheduler_type = json.load(f)["scheduler"][1]
     return scheduler_type
 
+import torch.nn as nn
+class FFTLoss(nn.Module):
+    def __init__(self, loss_weight=1.0, reduction='mean'):
+        super(FFTLoss, self).__init__()
+        self.loss_weight = loss_weight
+        self.criterion = torch.nn.L1Loss(reduction=reduction)
 
+    def forward(self, pred, target):
+        pred_fft = torch.fft.rfft2(pred)
+        target_fft = torch.fft.rfft2(target)
+
+        pred_fft = torch.stack([pred_fft.real, pred_fft.imag], dim=-1)
+        target_fft = torch.stack([target_fft.real, target_fft.imag], dim=-1)
+
+        return self.loss_weight * self.criterion(pred_fft, target_fft)
+        
 def save_model_card(
     repo_id: str,
     use_dora: bool,
@@ -1652,7 +1667,9 @@ def main(args):
         while len(sigma.shape) < n_dim:
             sigma = sigma.unsqueeze(-1)
         return sigma
-
+    
+    fft_loss_fn = FFTLoss(loss_weight=1.0).to(accelerator.device)
+    
     for epoch in range(first_epoch, args.num_train_epochs):
         unet.train()
         if args.train_text_encoder:
@@ -1853,6 +1870,12 @@ def main(args):
                 if args.with_prior_preservation:
                     # Add the prior loss to the instance loss.
                     loss = loss + args.prior_loss_weight * prior_loss
+                
+                # FFT
+                pred_image = vae.decode(model_pred / vae.config.scaling_factor).sample
+                target_image = vae.decode(target / vae.config.scaling_factor).sample
+                fft_loss = fft_loss_fn(pred_image, target_image)
+                loss = loss + fft_loss
 
                 accelerator.backward(loss)
                 if accelerator.sync_gradients:
