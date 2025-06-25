@@ -1668,7 +1668,7 @@ def main(args):
             sigma = sigma.unsqueeze(-1)
         return sigma
     
-    fft_loss_fn = FFTLoss(loss_weight=1.0).to(accelerator.device)
+    fft_loss_fn = FFTLoss(loss_weight=0.01).to(accelerator.device)
     
     for epoch in range(first_epoch, args.num_train_epochs):
         unet.train()
