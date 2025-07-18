@@ -1,8 +1,3 @@
----
-license: mit
-hf_link: RazinAleks/stable-diffusion-xl-base-dreambooth-lora-fft-loss
----
-
 # Experiment: FFT Loss Integration for DreamBooth LoRA
 
 In this experiment, I integrated an FFT (Fast Fourier Transform) loss into the fine-tuning process of a LoRA adapter for DreamBooth.
@@ -53,3 +48,5 @@ Below is a comparison of the default setup and the FFT loss integration for Drea
 - Better preservation of object features  
 - More visually realistic outputs  
 - Less blur effect
+
+hf_link: RazinAleks/stable-diffusion-xl-base-dreambooth-lora-fft-loss
