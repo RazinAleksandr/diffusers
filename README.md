@@ -1,52 +1,57 @@
-# Experiment: FFT Loss Integration for DreamBooth LoRA
+# Experiment: FFT Loss for DreamBooth LoRA
 
-In this experiment, I integrated an FFT (Fast Fourier Transform) loss into the fine-tuning process of a LoRA adapter for DreamBooth.
+This project explores integrating **FFT (Fast Fourier Transform) loss** into the fine-tuning of a LoRA adapter for DreamBooth.
 
-The **main diffusion loss** is computed in latent space, as in standard Stable Diffusion: mean squared error (MSE) between the predicted and true noise.
+## Loss Functions
 
-The **FFT loss** is applied in pixel space: after decoding the model’s latent outputs with a VAE, both the generated and target images are transformed into the frequency domain, and their spectral difference is penalized.
+* **Diffusion Loss**
+  Standard latent-space loss: Mean Squared Error (MSE) between predicted and true noise.
 
-**Training Objective:**  
-At each diffusion timestep *t*, the model minimizes:
+* **FFT Loss**
+  Pixel-space loss: After decoding latents with a VAE, both generated and target images are transformed to the frequency domain (via FFT), and the difference between their spectra is penalized.
+
+**Training Objective:**
+At each diffusion step *t*, we optimize:
 
 $$
-\mathcal{L}_{\text{total}} = \mathcal{L}_{\text{diffusion}}(z_t, \epsilon) + \alpha \cdot \mathcal{L}_{\text{FFT}}(x_\text{decoded}, x_\text{target})
+L_\text{total} = L_\text{diffusion}(z_t, \epsilon) + \alpha \cdot L_\text{FFT}(x_\text{decoded}, x_\text{target})
 $$
 
-where:  
-L_diffusion — MSE between predicted and target noise in latent space;  
-L_FFT — L1 (or L2) distance between magnitude spectra of the decoded and target images in pixel space;  
-alpha — tunable FFT loss weight (typically 0 to 0.001);  
-z_t — latent at timestep t;  
-epsilon — true noise;  
-x_decoded — VAE-decoded prediction;  
-x_target — ground-truth image.
+Where:
 
+* \$\mathcal{L}\_\text{diffusion}\$: MSE between predicted and target noise in latent space
+* \$\mathcal{L}\_\text{FFT}\$: L1 or L2 distance between FFT spectra (magnitude) of decoded and target images
+* \$\alpha\$: FFT loss weight (typically 0–0.001)
+* \$z\_t\$: latent at step \$t\$
+* \$\epsilon\$: ground-truth noise
+* \$x\_\text{decoded}\$: model output after VAE decoding
+* \$x\_\text{target}\$: ground-truth image
 
-This combined loss is calculated at each diffusion step, encouraging the model to match both latent noise structure and frequency content in pixel space.
+This combined loss is applied at every diffusion step, guiding the model to match both noise structure (latent) and frequency content (pixel), encouraging better preservation of both fine details and overall structure.
 
-As a result, this approach helps the model better retain both low- and high-frequency characteristics of the target object, leading to improved fine details and overall structure in generated images.
+## FFT Loss Illustration
 
-## FFT Loss Integration
-
-FFT loss is computed between the frequency spectra of the original and generated images.
+FFT loss is calculated as the spectral distance between the generated and target images.
 
 ![FFT Loss Diagram](fft_example.png)
 
-*Figure: From left to right—Original image, its FFT spectrum, simulated generated image, and its FFT spectrum. The FFT loss is calculated between the two spectra to improve both high- and low-frequency fidelity in fine-tuning.*
+*Left: Original image & FFT spectrum. Right: Generated image & FFT spectrum. FFT loss compares these spectra to improve detail and realism.*
 
-## Visual results example
+## Visual Results
 
-Below is a comparison of the default setup and the FFT loss integration for DreamBooth LoRA fine-tuning.
+Comparison between baseline and FFT loss-enhanced DreamBooth LoRA fine-tuning:
 
 ![Lora-500-steps Results Overview](results.png)
 
-*Figure: Left—Default results, Right—FFT loss integration. Zoomed crops illustrate improved detail retention and realism with FFT loss.*
+*Left: Default. Right: With FFT loss. Zoomed crops show improved sharpness and fidelity.*
 
-**Results:**  
-- Sharper high-frequency details  
-- Better preservation of object features  
-- More visually realistic outputs  
-- Less blur effect
+**Benefits:**
 
-hf_link: RazinAleks/stable-diffusion-xl-base-dreambooth-lora-fft-loss
+* Sharper high-frequency details
+* Better object feature preservation
+* More realistic outputs
+* Reduced blurriness
+
+---
+
+**Model:** [RazinAleks/stable-diffusion-xl-base-dreambooth-lora-fft-loss](https://huggingface.co/RazinAleks/stable-diffusion-xl-base-dreambooth-lora-fft-loss)
